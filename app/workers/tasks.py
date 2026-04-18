@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 
@@ -9,12 +9,18 @@ from app.workers.celery_app import celery_app
 
 
 DEFAULT_REPORTER_REPUTATION = 0.1
+MAX_REPUTATION_SCORE = 5.0
+NIGHTLY_REPUTATION_GROWTH = 1.01
 
 
 @celery_app.task
 def verify_media_task(report_id: str) -> dict:
     # TODO: replace with YOLO-based vehicle/license-plate verification.
-    return {"report_id": report_id, "verified": True, "checked_at": datetime.utcnow().isoformat()}
+    return {
+        "report_id": report_id,
+        "verified": True,
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 @celery_app.task
@@ -45,7 +51,7 @@ def nightly_credibility_update_task() -> dict:
         users = db.execute(select(Users)).scalars().all()
         for user in users:
             old_score = user.reputation_score
-            user.reputation_score = min(5.0, round(old_score * 1.01, 4))
+            user.reputation_score = min(MAX_REPUTATION_SCORE, round(old_score * NIGHTLY_REPUTATION_GROWTH, 4))
             db.add(
                 CredibilityAuditLog(
                     reporter_id=user.id,

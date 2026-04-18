@@ -52,10 +52,11 @@ def create_report(payload: ReportCreate, db: Session = Depends(get_db)):
     if reporter is None:
         raise HTTPException(status_code=404, detail="Reporter not found")
 
+    hour_start = payload.timestamp.replace(minute=0, second=0, microsecond=0)
     hourly_count_stmt = select(func.count(Reports.id)).where(
         and_(
             Reports.reporter_id == payload.reporter_id,
-            Reports.timestamp >= payload.timestamp.replace(minute=0, second=0, microsecond=0),
+            Reports.timestamp >= hour_start,
             Reports.timestamp <= payload.timestamp,
         )
     )

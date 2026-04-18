@@ -27,3 +27,5 @@ uvicorn app.main:app --reload
 - `reports.location` uses PostGIS geometry (`POINT`, SRID 4326).
 - Background jobs are defined in `app/workers/tasks.py` and use Celery.
 - Baseline model training entrypoint is `ml_pipeline/train_baseline.py`.
+- Training expects `ml_pipeline/data/baseline_training.csv` with:
+  `hour_of_day,day_of_week,road_type,weather,crash_density,reports_30d,reports_60d,reports_90d,reporter_weight,crash_within_6m`.

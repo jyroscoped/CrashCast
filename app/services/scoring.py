@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -27,10 +27,11 @@ def upsert_risk_profile(
         db.add(profile)
 
     profile.current_risk_score = calculate_risk_score(weighted_report_count)
-    profile.total_reports = int(weighted_report_count)
+    profile.total_reports = max(0, int(round(weighted_report_count)))
+    profile.weighted_report_total = round(weighted_report_count, 4)
     profile.confidence_interval = confidence_interval
     profile.top_risk_factors = json.dumps(top_risk_factors or DEFAULT_FACTORS)
-    profile.last_calculated_at = datetime.utcnow()
+    profile.last_calculated_at = datetime.now(timezone.utc)
 
     db.commit()
     db.refresh(profile)

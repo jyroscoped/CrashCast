@@ -9,6 +9,7 @@ from app.db.models import Reports
 
 
 EARTH_RADIUS_M = 6_371_000
+METERS_PER_DEGREE_LAT = 111_000
 
 
 def haversine_meters(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -41,8 +42,8 @@ def is_duplicate_report(
     window_start = timestamp - timedelta(minutes=settings.duplicate_report_window_minutes)
     lon_scale = max(0.01, math.cos(math.radians(latitude)))
     distance_expr = func.sqrt(
-        func.pow((Reports.latitude - latitude) * 111_000, 2)
-        + func.pow((Reports.longitude - longitude) * 111_000 * lon_scale, 2)
+        func.pow((Reports.latitude - latitude) * METERS_PER_DEGREE_LAT, 2)
+        + func.pow((Reports.longitude - longitude) * METERS_PER_DEGREE_LAT * lon_scale, 2)
     )
     stmt = (
         select(Reports.id)
@@ -53,7 +54,7 @@ def is_duplicate_report(
                 Reports.behavior_category == behavior_category,
                 Reports.timestamp >= window_start,
                 Reports.timestamp <= timestamp,
-                distance_expr <= 50,
+                distance_expr <= settings.duplicate_report_distance_meters,
             )
         )
         .limit(1)
