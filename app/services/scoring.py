@@ -1,0 +1,40 @@
+import json
+from datetime import datetime, timezone
+
+from sqlalchemy.orm import Session
+
+from app.core.config import settings
+from app.db.models import DriverRiskProfiles
+
+
+def _default_factors() -> list[str]:
+    return [item.strip() for item in settings.default_top_risk_factors.split(",") if item.strip()]
+
+
+def calculate_risk_score(weighted_report_count: float) -> float:
+    score = min(100.0, max(0.0, weighted_report_count * 8.0))
+    return round(score, 2)
+
+
+def upsert_risk_profile(
+    db: Session,
+    hashed_plate: str,
+    weighted_report_count: float,
+    confidence_interval: float = 0.75,
+    top_risk_factors: list[str] | None = None,
+) -> DriverRiskProfiles:
+    profile = db.get(DriverRiskProfiles, hashed_plate)
+    if profile is None:
+        profile = DriverRiskProfiles(hashed_license_plate=hashed_plate)
+        db.add(profile)
+
+    profile.current_risk_score = calculate_risk_score(weighted_report_count)
+    profile.total_reports = max(0, int(round(weighted_report_count)))
+    profile.weighted_report_total = round(weighted_report_count, 4)
+    profile.confidence_interval = confidence_interval
+    profile.top_risk_factors = json.dumps(top_risk_factors or _default_factors())
+    profile.last_calculated_at = datetime.now(timezone.utc)
+
+    db.commit()
+    db.refresh(profile)
+    return profile
