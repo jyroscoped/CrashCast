@@ -7,3 +7,7 @@ def test_haversine_zero_distance():
 
 def test_proximity_validation_true_for_nearby_points():
     assert validate_reporter_proximity(40.4406, -79.9959, 40.4408, -79.9957)
+
+
+def test_proximity_validation_false_for_distant_points():
+    assert not validate_reporter_proximity(40.4406, -79.9959, 40.4506, -80.0059)

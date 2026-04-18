@@ -56,6 +56,7 @@ def create_report(payload: ReportCreate, db: Session = Depends(get_db)):
         and_(
             Reports.reporter_id == payload.reporter_id,
             Reports.timestamp >= payload.timestamp.replace(minute=0, second=0, microsecond=0),
+            Reports.timestamp <= payload.timestamp,
         )
     )
     hourly_count = db.execute(hourly_count_stmt).scalar_one()

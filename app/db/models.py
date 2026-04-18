@@ -31,7 +31,7 @@ class Users(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     reputation_score: Mapped[float] = mapped_column(Float, default=0.1, nullable=False)
     social_graph_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.utcnow(), nullable=False)
 
     reports: Mapped[list["Reports"]] = relationship(back_populates="reporter")
 
@@ -63,7 +63,9 @@ class DriverRiskProfiles(Base):
     total_reports: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     confidence_interval: Mapped[float] = mapped_column(Float, default=0.5, nullable=False)
     top_risk_factors: Mapped[str] = mapped_column(Text, default="", nullable=False)
-    last_calculated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    last_calculated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.utcnow(), nullable=False
+    )
 
 
 class CredibilityAuditLog(Base):
@@ -74,4 +76,4 @@ class CredibilityAuditLog(Base):
     old_reputation_score: Mapped[float] = mapped_column(Float, nullable=False)
     new_reputation_score: Mapped[float] = mapped_column(Float, nullable=False)
     reason: Mapped[str] = mapped_column(String(255), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.utcnow(), nullable=False)

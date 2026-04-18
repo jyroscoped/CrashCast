@@ -8,8 +8,12 @@ from app.services.scoring import upsert_risk_profile
 from app.workers.celery_app import celery_app
 
 
+DEFAULT_REPORTER_REPUTATION = 0.1
+
+
 @celery_app.task
 def verify_media_task(report_id: str) -> dict:
+    # TODO: replace with YOLO-based vehicle/license-plate verification.
     return {"report_id": report_id, "verified": True, "checked_at": datetime.utcnow().isoformat()}
 
 
@@ -21,7 +25,7 @@ def recompute_risk_profile_task(hashed_plate: str) -> dict:
         weighted_count = 0.0
         for report in reports:
             reporter = db.get(Users, report.reporter_id)
-            weighted_count += reporter.reputation_score if reporter else 0.1
+            weighted_count += reporter.reputation_score if reporter else DEFAULT_REPORTER_REPUTATION
 
         profile = upsert_risk_profile(db, hashed_plate, weighted_count)
         return {

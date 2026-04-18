@@ -39,9 +39,10 @@ def is_duplicate_report(
     longitude: float,
 ) -> bool:
     window_start = timestamp - timedelta(minutes=settings.duplicate_report_window_minutes)
+    lon_scale = max(0.01, math.cos(math.radians(latitude)))
     distance_expr = func.sqrt(
         func.pow((Reports.latitude - latitude) * 111_000, 2)
-        + func.pow((Reports.longitude - longitude) * 111_000, 2)
+        + func.pow((Reports.longitude - longitude) * 111_000 * lon_scale, 2)
     )
     stmt = (
         select(Reports.id)

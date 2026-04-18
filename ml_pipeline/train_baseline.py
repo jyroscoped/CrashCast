@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+import joblib
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.metrics import roc_auc_score
@@ -13,6 +14,7 @@ from xgboost import XGBClassifier
 @dataclass
 class TrainingArtifacts:
     model_path: Path
+    pipeline_path: Path
     auc: float
 
 
@@ -34,7 +36,7 @@ def build_features(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
     return X, y
 
 
-def train_model(dataset_path: Path, model_path: Path) -> TrainingArtifacts:
+def train_model(dataset_path: Path, model_path: Path, pipeline_path: Path) -> TrainingArtifacts:
     df = pd.read_csv(dataset_path)
     X, y = build_features(df)
 
@@ -64,13 +66,22 @@ def train_model(dataset_path: Path, model_path: Path) -> TrainingArtifacts:
     auc = roc_auc_score(y_test, preds)
 
     model_path.parent.mkdir(parents=True, exist_ok=True)
+    pipeline_path.parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump(pipeline, pipeline_path)
     pipeline.named_steps["model"].save_model(str(model_path))
-    return TrainingArtifacts(model_path=model_path, auc=auc)
+    return TrainingArtifacts(model_path=model_path, pipeline_path=pipeline_path, auc=auc)
 
 
 if __name__ == "__main__":
     artifacts = train_model(
         dataset_path=Path("ml_pipeline/data/baseline_training.csv"),
         model_path=Path("ml_pipeline/models/crash_predictor_v1.json"),
+        pipeline_path=Path("ml_pipeline/models/crash_predictor_pipeline.joblib"),
     )
-    print({"model_path": str(artifacts.model_path), "auc": round(artifacts.auc, 4)})
+    print(
+        {
+            "model_path": str(artifacts.model_path),
+            "pipeline_path": str(artifacts.pipeline_path),
+            "auc": round(artifacts.auc, 4),
+        }
+    )
