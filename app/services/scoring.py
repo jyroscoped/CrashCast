@@ -3,10 +3,12 @@ from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.db.models import DriverRiskProfiles
 
 
-DEFAULT_FACTORS = ["tailgating", "late_night"]
+def _default_factors() -> list[str]:
+    return [item.strip() for item in settings.default_top_risk_factors.split(",") if item.strip()]
 
 
 def calculate_risk_score(weighted_report_count: float) -> float:
@@ -30,7 +32,7 @@ def upsert_risk_profile(
     profile.total_reports = max(0, int(round(weighted_report_count)))
     profile.weighted_report_total = round(weighted_report_count, 4)
     profile.confidence_interval = confidence_interval
-    profile.top_risk_factors = json.dumps(top_risk_factors or DEFAULT_FACTORS)
+    profile.top_risk_factors = json.dumps(top_risk_factors or _default_factors())
     profile.last_calculated_at = datetime.now(timezone.utc)
 
     db.commit()

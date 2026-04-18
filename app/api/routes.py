@@ -1,4 +1,5 @@
 import hashlib
+import hmac
 import json
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -28,7 +29,9 @@ router = APIRouter()
 
 
 def hash_plate(raw_plate: str) -> str:
-    return hashlib.sha256(raw_plate.strip().upper().encode("utf-8")).hexdigest()
+    normalized = raw_plate.strip().upper().encode("utf-8")
+    pepper = settings.plate_hash_pepper.encode("utf-8")
+    return hmac.new(pepper, normalized, hashlib.sha256).hexdigest()
 
 
 @router.post("/auth/reporters", response_model=ReporterResponse, status_code=status.HTTP_201_CREATED)

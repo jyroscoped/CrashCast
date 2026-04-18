@@ -2,15 +2,11 @@ from datetime import datetime, timezone
 
 from sqlalchemy import select
 
+from app.core.config import settings
 from app.db.models import CredibilityAuditLog, Reports, Users
 from app.db.session import SessionLocal
 from app.services.scoring import upsert_risk_profile
 from app.workers.celery_app import celery_app
-
-
-DEFAULT_REPORTER_REPUTATION = 0.1
-MAX_REPUTATION_SCORE = 5.0
-NIGHTLY_REPUTATION_GROWTH = 1.01
 
 
 @celery_app.task
@@ -31,7 +27,9 @@ def recompute_risk_profile_task(hashed_plate: str) -> dict:
         weighted_count = 0.0
         for report in reports:
             reporter = db.get(Users, report.reporter_id)
-            weighted_count += reporter.reputation_score if reporter else DEFAULT_REPORTER_REPUTATION
+            weighted_count += (
+                reporter.reputation_score if reporter else settings.default_reporter_reputation
+            )
 
         profile = upsert_risk_profile(db, hashed_plate, weighted_count)
         return {
@@ -51,7 +49,10 @@ def nightly_credibility_update_task() -> dict:
         users = db.execute(select(Users)).scalars().all()
         for user in users:
             old_score = user.reputation_score
-            user.reputation_score = min(MAX_REPUTATION_SCORE, round(old_score * NIGHTLY_REPUTATION_GROWTH, 4))
+            user.reputation_score = min(
+                settings.max_reputation_score,
+                round(old_score * settings.nightly_reputation_growth, 4),
+            )
             db.add(
                 CredibilityAuditLog(
                     reporter_id=user.id,
