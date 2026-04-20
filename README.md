@@ -43,7 +43,7 @@ If your docs page appears blank, check browser extensions/network policy (Swagge
 ### 1) Create environment and install dependencies
 
 ```bash
-cd /home/runner/work/CrashCast/CrashCast
+cd <your-local-path>/CrashCast
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -51,7 +51,7 @@ pip install -r requirements.txt
 
 ### 2) Configure environment variables
 
-Create `/home/runner/work/CrashCast/CrashCast/.env`:
+Create `.env` in the project root:
 
 ```env
 APP_NAME=CrashCast API
@@ -66,14 +66,14 @@ PLATE_HASH_PEPPER=change-me
 ### 3) Initialize database tables
 
 ```bash
-cd /home/runner/work/CrashCast/CrashCast
+cd <your-local-path>/CrashCast
 python -c "from app.db.init_db import init_db; init_db()"
 ```
 
 ### 4) Start the API
 
 ```bash
-cd /home/runner/work/CrashCast/CrashCast
+cd <your-local-path>/CrashCast
 source .venv/bin/activate
 uvicorn app.main:app --reload
 ```
@@ -81,7 +81,7 @@ uvicorn app.main:app --reload
 ### 5) Start Celery worker (separate terminal)
 
 ```bash
-cd /home/runner/work/CrashCast/CrashCast
+cd <your-local-path>/CrashCast
 source .venv/bin/activate
 celery -A app.workers.celery_app.celery_app worker -Q verification,scoring,nightly --loglevel=info
 ```
@@ -175,7 +175,7 @@ curl "http://127.0.0.1:8000/api/v1/risk-profile/HASHED_PLATE"
 ## Testing
 
 ```bash
-cd /home/runner/work/CrashCast/CrashCast
+cd <your-local-path>/CrashCast
 source .venv/bin/activate
 pytest -q
 ```
@@ -183,7 +183,7 @@ pytest -q
 ## Notes
 
 - `reports.location` uses PostGIS geometry (`POINT`, SRID 4326).
-- Background jobs are in `/home/runner/work/CrashCast/CrashCast/app/workers/tasks.py`.
-- Baseline model training entrypoint: `/home/runner/work/CrashCast/CrashCast/ml_pipeline/train_baseline.py`.
+- Background jobs are in `app/workers/tasks.py`.
+- Baseline model training entrypoint: `ml_pipeline/train_baseline.py`.
 - Training expects `ml_pipeline/data/baseline_training.csv` columns:
   `hour_of_day,day_of_week,road_type,weather,crash_density,reports_30d,reports_60d,reports_90d,reporter_weight,crash_within_6m`.
