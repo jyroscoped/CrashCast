@@ -2,7 +2,7 @@ import hashlib
 import hmac
 import json
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from geoalchemy2.shape import from_shape
 from shapely.geometry import Point
 from sqlalchemy import and_, func, select
@@ -12,6 +12,7 @@ from app.core.config import settings
 from app.db.models import DriverRiskProfiles, Reports, Users
 from app.db.session import get_db
 from app.schemas import (
+    MediaAutoFillResponse,
     MediaPresignRequest,
     MediaPresignResponse,
     ReportCreate,
@@ -21,6 +22,7 @@ from app.schemas import (
     RiskProfileResponse,
 )
 from app.services.anti_gaming import is_duplicate_report, validate_reporter_proximity
+from app.services.media_intel import extract_media_autofill
 from app.services.storage import presign_upload
 from app.workers.tasks import recompute_risk_profile_task, verify_media_task
 
@@ -47,6 +49,23 @@ def create_reporter(payload: ReporterCreate, db: Session = Depends(get_db)):
 def create_upload_url(payload: MediaPresignRequest):
     url, object_key = presign_upload(payload.filename, payload.content_type)
     return MediaPresignResponse(upload_url=url, object_key=object_key)
+
+
+@router.post("/media/extract", response_model=MediaAutoFillResponse)
+async def extract_media_fields(file: UploadFile = File(...)):
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Only image uploads are supported")
+
+    image_bytes = await file.read()
+    if not image_bytes:
+        raise HTTPException(status_code=400, detail="Empty file upload")
+
+    try:
+        extracted = extract_media_autofill(image_bytes, filename=file.filename)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="Unable to process uploaded image") from exc
+
+    return MediaAutoFillResponse(**extracted)
 
 
 @router.post("/reports", response_model=ReportResponse, status_code=status.HTTP_201_CREATED)

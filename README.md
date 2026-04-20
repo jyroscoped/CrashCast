@@ -20,6 +20,7 @@ uvicorn app.main:app --reload
 - `GET /health`
 - `POST /api/v1/auth/reporters`
 - `POST /api/v1/media/presign`
+- `POST /api/v1/media/extract` (upload an image and auto-detect license plate, GPS, and timestamp from photo metadata)
 - `POST /api/v1/reports`
 - `GET /api/v1/risk-profile/{hashed_plate}`
 
