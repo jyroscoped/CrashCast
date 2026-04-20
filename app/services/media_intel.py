@@ -15,9 +15,9 @@ GPS_LONGITUDE_TAG = 4
 GPS_LONGITUDE_REF_TAG = 3
 
 
-# Heuristic for common alphanumeric license plate forms with optional separator.
-# This intentionally avoids region-specific strictness and is validated by
-# requiring both letters and digits in the normalized candidate.
+# Best-effort heuristic for common alphanumeric plate-like strings with an
+# optional separator; this can still produce false positives and is not
+# region-specific strict validation.
 LICENSE_PLATE_PATTERN = re.compile(r"\b([A-Z0-9]{2,4}[-\s]?[A-Z0-9]{2,4})\b")
 
 
@@ -88,8 +88,8 @@ def extract_plate_from_image_bytes(image_bytes: bytes) -> str | None:
         return None
 
     try:
-        image = Image.open(BytesIO(image_bytes))
-        detected_text = pytesseract.image_to_string(image)
+        with Image.open(BytesIO(image_bytes)) as image:
+            detected_text = pytesseract.image_to_string(image)
     except Exception:
         return None
 
@@ -97,8 +97,8 @@ def extract_plate_from_image_bytes(image_bytes: bytes) -> str | None:
 
 
 def extract_media_autofill(image_bytes: bytes, filename: str | None = None) -> dict[str, Any]:
-    image = Image.open(BytesIO(image_bytes))
-    exif_data = image.getexif() or {}
+    with Image.open(BytesIO(image_bytes)) as image:
+        exif_data = image.getexif() or {}
 
     latitude, longitude = extract_gps_from_exif(exif_data)
     timestamp = extract_timestamp_from_exif(exif_data)
