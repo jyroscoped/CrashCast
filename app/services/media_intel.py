@@ -15,6 +15,9 @@ GPS_LONGITUDE_TAG = 4
 GPS_LONGITUDE_REF_TAG = 3
 
 
+# Heuristic for common alphanumeric license plate forms with optional separator.
+# This intentionally avoids region-specific strictness and is validated by
+# requiring both letters and digits in the normalized candidate.
 LICENSE_PLATE_PATTERN = re.compile(r"\b([A-Z0-9]{2,4}[-\s]?[A-Z0-9]{2,4})\b")
 
 

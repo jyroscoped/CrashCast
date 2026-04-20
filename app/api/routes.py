@@ -4,6 +4,7 @@ import json
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from geoalchemy2.shape import from_shape
+from PIL import UnidentifiedImageError
 from shapely.geometry import Point
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
@@ -62,8 +63,10 @@ async def extract_media_fields(file: UploadFile = File(...)):
 
     try:
         extracted = extract_media_autofill(image_bytes, filename=file.filename)
+    except UnidentifiedImageError as exc:
+        raise HTTPException(status_code=400, detail="Unsupported or corrupt image file") from exc
     except Exception as exc:
-        raise HTTPException(status_code=400, detail="Unable to process uploaded image") from exc
+        raise HTTPException(status_code=400, detail="Image metadata extraction failed") from exc
 
     return MediaAutoFillResponse(**extracted)
 
