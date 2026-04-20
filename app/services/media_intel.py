@@ -16,10 +16,12 @@ GPS_LONGITUDE_TAG = 4
 GPS_LONGITUDE_REF_TAG = 3
 
 
-# Best-effort heuristic for common alphanumeric plate-like strings with an
-# optional separator; this can still produce false positives and is not
-# region-specific strict validation.
+# Best-effort heuristic oriented toward common US/Canada-style alphanumeric
+# plate strings with an optional separator; this can still produce false
+# positives and is not strict region-level validation.
 LICENSE_PLATE_PATTERN = re.compile(r"\b([A-Z0-9]{2,4}[-\s]?[A-Z0-9]{2,4})\b")
+MIN_PLATE_LENGTH = 5
+MAX_PLATE_LENGTH = 8
 logger = logging.getLogger(__name__)
 
 
@@ -75,7 +77,7 @@ def extract_plate_from_text(text: str) -> str | None:
     for match in LICENSE_PLATE_PATTERN.findall(text.upper()):
         normalized = re.sub(r"[-\s]", "", match)
         if (
-            5 <= len(normalized) <= 8
+            MIN_PLATE_LENGTH <= len(normalized) <= MAX_PLATE_LENGTH
             and any(ch.isalpha() for ch in normalized)
             and any(ch.isdigit() for ch in normalized)
         ):
