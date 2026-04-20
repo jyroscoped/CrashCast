@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import json
+import logging
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from geoalchemy2.shape import from_shape
@@ -29,6 +30,7 @@ from app.workers.tasks import recompute_risk_profile_task, verify_media_task
 
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def hash_plate(raw_plate: str) -> str:
@@ -65,8 +67,13 @@ async def extract_media_fields(file: UploadFile = File(...)):
         extracted = extract_media_autofill(image_bytes, filename=file.filename)
     except UnidentifiedImageError as exc:
         raise HTTPException(status_code=400, detail="Unsupported or corrupt image file") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Image metadata format is invalid") from exc
+    except OSError as exc:
+        raise HTTPException(status_code=400, detail="Unable to decode image bytes") from exc
     except Exception as exc:
-        raise HTTPException(status_code=400, detail="Image metadata extraction failed") from exc
+        logger.exception("Unexpected failure during media extraction")
+        raise HTTPException(status_code=500, detail="Unexpected image processing failure") from exc
 
     return MediaAutoFillResponse(**extracted)
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import logging
 from datetime import datetime, timezone
 from fractions import Fraction
 from io import BytesIO
@@ -19,6 +20,7 @@ GPS_LONGITUDE_REF_TAG = 3
 # optional separator; this can still produce false positives and is not
 # region-specific strict validation.
 LICENSE_PLATE_PATTERN = re.compile(r"\b([A-Z0-9]{2,4}[-\s]?[A-Z0-9]{2,4})\b")
+logger = logging.getLogger(__name__)
 
 
 def _to_float(value: Any) -> float:
@@ -90,7 +92,11 @@ def extract_plate_from_image_bytes(image_bytes: bytes) -> str | None:
     try:
         with Image.open(BytesIO(image_bytes)) as image:
             detected_text = pytesseract.image_to_string(image)
-    except Exception:
+    except (OSError, ValueError):
+        logger.info("OCR image decoding failed")
+        return None
+    except RuntimeError:
+        logger.info("OCR engine failed while processing image")
         return None
 
     return extract_plate_from_text(detected_text)
