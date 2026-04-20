@@ -6,7 +6,7 @@ from fractions import Fraction
 from io import BytesIO
 from typing import Any
 
-from PIL import ExifTags, Image
+from PIL import Image
 
 
 GPS_LATITUDE_TAG = 2
@@ -34,7 +34,8 @@ def _dms_to_decimal(dms: tuple[Any, Any, Any], ref: str) -> float:
     minutes = _to_float(dms[1])
     seconds = _to_float(dms[2])
     decimal = degrees + (minutes / 60.0) + (seconds / 3600.0)
-    if ref.upper() in {"S", "W"}:
+    ref_value = ref.decode("utf-8") if isinstance(ref, bytes) else ref
+    if ref_value.upper() in {"S", "W"}:
         decimal *= -1
     return decimal
 
@@ -68,7 +69,11 @@ def extract_timestamp_from_exif(exif_data: dict[int, Any]) -> datetime | None:
 def extract_plate_from_text(text: str) -> str | None:
     for match in LICENSE_PLATE_PATTERN.findall(text.upper()):
         normalized = re.sub(r"[-\s]", "", match)
-        if 5 <= len(normalized) <= 8:
+        if (
+            5 <= len(normalized) <= 8
+            and any(ch.isalpha() for ch in normalized)
+            and any(ch.isdigit() for ch in normalized)
+        ):
             return normalized
     return None
 
