@@ -92,11 +92,11 @@ def extract_plate_from_image_bytes(image_bytes: bytes) -> str | None:
     try:
         with Image.open(BytesIO(image_bytes)) as image:
             detected_text = pytesseract.image_to_string(image)
-    except (OSError, ValueError):
-        logger.info("OCR image decoding failed")
+    except (OSError, ValueError) as exc:
+        logger.info("OCR image decoding failed: %s", exc)
         return None
-    except RuntimeError:
-        logger.info("OCR engine failed while processing image")
+    except RuntimeError as exc:
+        logger.info("OCR engine failed while processing image: %s", exc)
         return None
 
     return extract_plate_from_text(detected_text)
