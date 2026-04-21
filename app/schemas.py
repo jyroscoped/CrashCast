@@ -81,3 +81,10 @@ class MediaPresignResponse(BaseModel):
 class MediaUploadResponse(BaseModel):
     media_url: str
     object_key: str
+
+
+class MediaAutoFillResponse(BaseModel):
+    detected_license_plate: str | None
+    detected_latitude: float | None
+    detected_longitude: float | None
+    detected_timestamp: datetime | None

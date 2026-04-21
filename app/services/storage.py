@@ -1,6 +1,6 @@
 import re
 import uuid
-from pathlib import Path, PurePath
+from pathlib import Path
 
 import boto3
 from botocore.exceptions import NoCredentialsError
@@ -13,7 +13,8 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 
 
 def _sanitize_filename(filename: str) -> str:
-    safe_name = SAFE_FILENAME_RE.sub("_", PurePath(filename).name.strip())
+    leaf_name = re.split(r"[\\/]+", filename.strip())[-1]
+    safe_name = SAFE_FILENAME_RE.sub("_", leaf_name)
     if not safe_name or safe_name in {".", ".."}:
         raise ValueError("Invalid filename")
     return safe_name[:128]
