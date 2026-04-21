@@ -3,9 +3,9 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 
 from app.core.config import settings
-from app.db.models import CredibilityAuditLog, Reports, Users
+from app.db.models import CredibilityAuditLog, Users
 from app.db.session import SessionLocal
-from app.services.scoring import upsert_risk_profile
+from app.services.scoring import compute_weighted_report_count, upsert_risk_profile
 from app.workers.celery_app import celery_app
 
 
@@ -23,14 +23,7 @@ def verify_media_task(report_id: str) -> dict:
 def recompute_risk_profile_task(hashed_plate: str) -> dict:
     db = SessionLocal()
     try:
-        reports = db.execute(select(Reports).where(Reports.target_license_plate == hashed_plate)).scalars().all()
-        weighted_count = 0.0
-        for report in reports:
-            reporter = db.get(Users, report.reporter_id)
-            weighted_count += (
-                reporter.reputation_score if reporter else settings.default_reporter_reputation
-            )
-
+        weighted_count = compute_weighted_report_count(db, hashed_plate)
         profile = upsert_risk_profile(db, hashed_plate, weighted_count)
         return {
             "hashed_plate": hashed_plate,

@@ -1,10 +1,11 @@
 import json
 from datetime import datetime, timezone
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.db.models import DriverRiskProfiles
+from app.db.models import DriverRiskProfiles, Reports, Users, VerificationStatus
 
 
 def _default_factors() -> list[str]:
@@ -14,6 +15,24 @@ def _default_factors() -> list[str]:
 def calculate_risk_score(weighted_report_count: float) -> float:
     score = min(100.0, max(0.0, weighted_report_count * 8.0))
     return round(score, 2)
+
+
+def compute_weighted_report_count(db: Session, hashed_plate: str) -> float:
+    reports = (
+        db.execute(
+            select(Reports).where(
+                Reports.target_license_plate == hashed_plate,
+                Reports.verification_status == VerificationStatus.verified,
+            )
+        )
+        .scalars()
+        .all()
+    )
+    weighted_count = 0.0
+    for report in reports:
+        reporter = db.get(Users, report.reporter_id)
+        weighted_count += reporter.reputation_score if reporter else settings.default_reporter_reputation
+    return round(weighted_count, 6)
 
 
 def upsert_risk_profile(
