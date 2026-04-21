@@ -8,12 +8,29 @@ class Settings(BaseSettings):
     app_name: str = "CrashCast API"
     api_prefix: str = "/api/v1"
 
-    database_url: str = Field(default="postgresql+psycopg://localhost:5432/crashcast")
-    redis_url: str = Field(default="redis://localhost:6379/0")
+    database_url: str = Field(default="sqlite:///./crashcast.db")
+    celery_broker_url: str = Field(default="filesystem://")
+    celery_result_backend: str = Field(default="cache+memory://")
+    celery_always_eager: bool = False
 
     aws_region: str = Field(default="us-east-1")
     s3_bucket: str = Field(default="crashcast-media")
+    media_storage_mode: str = Field(default="local")
     plate_hash_pepper: str = Field(default="change-me")
+    local_upload_dir: str = Field(default="uploads")
+    max_upload_bytes: int = 25 * 1024 * 1024
+    admin_username: str = Field(default="admin")
+    admin_password: str = Field(default="change-me")
+    admin_page_size: int = 100
+
+    allowed_media_content_types: tuple[str, ...] = (
+        "image/jpeg",
+        "image/png",
+        "video/mp4",
+        "video/quicktime",
+    )
+    max_future_report_skew_seconds: int = 300
+    max_report_age_days: int = 30
 
     report_rate_limit_per_hour: int = 30
     duplicate_report_window_minutes: int = 10

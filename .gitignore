@@ -60,6 +60,8 @@ cover/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+crashcast.db
+uploads/
 
 # Flask stuff:
 instance/
@@ -130,6 +132,7 @@ __pypackages__/
 # Celery stuff
 celerybeat-schedule
 celerybeat.pid
+.celery_broker/
 
 # SageMath parsed files
 *.sage.py
