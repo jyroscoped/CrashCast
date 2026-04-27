@@ -106,7 +106,9 @@ def extract_plate_from_image_bytes(image_bytes: bytes) -> str | None:
 
 def extract_media_autofill(image_bytes: bytes, filename: str | None = None) -> dict[str, Any]:
     with Image.open(BytesIO(image_bytes)) as image:
-        exif_data = image.getexif() or {}
+        exif_obj = image.getexif()
+        exif_data: dict[int, Any] = dict(exif_obj)
+        exif_data[34853] = exif_obj.get_ifd(34853)
 
     latitude, longitude = extract_gps_from_exif(exif_data)
     timestamp = extract_timestamp_from_exif(exif_data)
