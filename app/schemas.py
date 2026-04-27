@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.db.models import BehaviorCategory, VerificationStatus
 
@@ -11,6 +11,8 @@ class ReporterCreate(BaseModel):
 
 
 class ReporterResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     reputation_score: float
     social_graph_verified: bool
