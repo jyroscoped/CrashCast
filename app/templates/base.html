@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ title or "CrashCast" }}</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <header class="site-header">
+        <h1>CrashCast</h1>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/ui/report">User UI</a>
+            <a href="/admin">Admin UI</a>
+            <a href="/docs">API Docs</a>
+        </nav>
+    </header>
+    <main class="page-content">
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

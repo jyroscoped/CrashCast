@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+    <h2>Admin dashboard</h2>
+    <p>Moderate report status and inspect primary database tables.</p>
+    <div class="stats">
+        <div class="stat">Pending: <strong>{{ pending_count }}</strong></div>
+        <div class="stat">Verified: <strong>{{ verified_count }}</strong></div>
+        <div class="stat">Quarantined: <strong>{{ quarantined_count }}</strong></div>
+    </div>
+</section>
+
+<section class="card">
+    <h3>Reports</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Reporter</th>
+                <th>Plate Hash</th>
+                <th>Behavior</th>
+                <th>Status</th>
+                <th>Timestamp</th>
+                <th>Media</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for report in reports %}
+            <tr>
+                <td><code>{{ report.id }}</code></td>
+                <td><code>{{ report.reporter_id }}</code></td>
+                <td><code>{{ report.target_license_plate }}</code></td>
+                <td>{{ report.behavior_category.value }}</td>
+                <td>{{ report.verification_status.value }}</td>
+                <td>{{ report.timestamp }}</td>
+                <td>
+                    {% if report.media_url %}
+                    <a href="{{ report.media_url }}" target="_blank">open</a>
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td>
+                    <form method="post" action="/admin/reports/{{ report.id }}/status" class="inline-form">
+                        <select name="verification_status">
+                            <option value="pending" {% if report.verification_status.value == "pending" %}selected{% endif %}>pending</option>
+                            <option value="verified" {% if report.verification_status.value == "verified" %}selected{% endif %}>verified</option>
+                            <option value="quarantined" {% if report.verification_status.value == "quarantined" %}selected{% endif %}>quarantined</option>
+                        </select>
+                        <button type="submit" class="btn btn-small">Save</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="card">
+    <h3>Users</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Reputation</th>
+                <th>Social Verified</th>
+                <th>Created</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td><code>{{ user.id }}</code></td>
+                <td>{{ user.reputation_score }}</td>
+                <td>{{ user.social_graph_verified }}</td>
+                <td>{{ user.created_at }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="card">
+    <h3>Driver risk profiles</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Plate Hash</th>
+                <th>Risk Score</th>
+                <th>Total Reports</th>
+                <th>Weighted</th>
+                <th>Last Calculated</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for profile in profiles %}
+            <tr>
+                <td><code>{{ profile.hashed_license_plate }}</code></td>
+                <td>{{ profile.current_risk_score }}</td>
+                <td>{{ profile.total_reports }}</td>
+                <td>{{ profile.weighted_report_total }}</td>
+                <td>{{ profile.last_calculated_at }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

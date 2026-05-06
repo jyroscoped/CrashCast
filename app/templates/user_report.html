@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+    <h2>User report submission</h2>
+    <p>Use an existing reporter ID or leave it blank to create a new reporter profile automatically.</p>
+
+    {% if submission_ok %}
+    <div class="notice success">
+        <strong>Report submitted.</strong>
+        <div>Report ID: <code>{{ report_id }}</code></div>
+        <div>Status: <code>{{ verification_status }}</code></div>
+        <div>Hashed plate: <code>{{ hashed_plate }}</code></div>
+        <div>Risk profile: <a href="{{ risk_profile_url }}" target="_blank">{{ risk_profile_url }}</a></div>
+    </div>
+    {% endif %}
+    {% if submission_error %}
+    <div class="notice error">
+        <strong>Submission failed:</strong> {{ submission_error }}
+    </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="form-grid">
+        <label>
+            Existing Reporter ID (optional)
+            <input name="reporter_id" type="text" placeholder="UUID">
+        </label>
+        <label>
+            Create new reporter as social-graph verified
+            <input name="social_graph_verified" type="checkbox" value="true">
+        </label>
+        <label>
+            Plate
+            <input name="target_license_plate" type="text" required minlength="3" maxlength="64" placeholder="7GWB272">
+        </label>
+        <label>
+            Behavior category
+            <select name="behavior_category" required>
+                {% for category in behavior_categories %}
+                <option value="{{ category }}">{{ category }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            Incident latitude
+            <input name="latitude" type="number" step="any" required placeholder="40.4406">
+        </label>
+        <label>
+            Incident longitude
+            <input name="longitude" type="number" step="any" required placeholder="-79.9959">
+        </label>
+        <label>
+            Reporter latitude
+            <input name="reporter_latitude" type="number" step="any" required placeholder="40.4406">
+        </label>
+        <label>
+            Reporter longitude
+            <input name="reporter_longitude" type="number" step="any" required placeholder="-79.9959">
+        </label>
+        <label>
+            Upload photo/video (optional)
+            <input name="media_file" type="file" accept="image/jpeg,image/png,video/mp4,video/quicktime">
+        </label>
+        <div class="full-row">
+            <button type="submit" class="btn">Submit report</button>
+        </div>
+    </form>
+</section>
+
+<section class="card">
+    <h3>Recent reporters</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Reporter ID</th>
+                <th>Reputation</th>
+                <th>Social Verified</th>
+                <th>Created</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reporter in reporters %}
+            <tr>
+                <td><code>{{ reporter.id }}</code></td>
+                <td>{{ reporter.reputation_score }}</td>
+                <td>{{ reporter.social_graph_verified }}</td>
+                <td>{{ reporter.created_at }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}
