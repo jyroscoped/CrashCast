@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,6 +14,29 @@ class Settings(BaseSettings):
     aws_region: str = Field(default="us-east-1")
     s3_bucket: str = Field(default="crashcast-media")
     plate_hash_pepper: str = Field(default="change-me")
+    public_plate_lookup_salt: str = Field(default="public_demo_salt_not_secret")
+    local_upload_dir: str = Field(default="uploads")
+    max_upload_bytes: int = 25 * 1024 * 1024
+    admin_username: str = Field(default="admin")
+    admin_password: str = Field(default="change-me")
+    admin_page_size: int = 100
+    allowed_media_content_types: tuple[str, ...] = (
+        "image/jpeg",
+        "image/png",
+        "video/mp4",
+        "video/quicktime",
+    )
+    cors_allowed_origins: tuple[str, ...] = (
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    )
+
+    @field_validator("cors_allowed_origins", mode="before")
+    @classmethod
+    def _parse_cors_allowed_origins(cls, value: object) -> object:
+        if isinstance(value, str):
+            return tuple(origin.strip() for origin in value.split(",") if origin.strip())
+        return value
 
     report_rate_limit_per_hour: int = 30
     duplicate_report_window_minutes: int = 10

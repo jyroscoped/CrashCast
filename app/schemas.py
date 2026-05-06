@@ -37,6 +37,11 @@ class ReportResponse(BaseModel):
 
 
 class RiskProfileResponse(BaseModel):
+    hashed_plate: str
+    current_score: float
+    total_reports: int
+    last_calculated_at: datetime | None
+    behavior_counts: dict[str, int]
     risk_score: float
     confidence_interval: float
     top_risk_factors: list[str]

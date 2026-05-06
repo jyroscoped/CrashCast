@@ -20,6 +20,7 @@ def upsert_risk_profile(
     db: Session,
     hashed_plate: str,
     weighted_report_count: float,
+    total_reports: int = 0,
     confidence_interval: float = 0.75,
     top_risk_factors: list[str] | None = None,
 ) -> DriverRiskProfiles:
@@ -29,7 +30,7 @@ def upsert_risk_profile(
         db.add(profile)
 
     profile.current_risk_score = calculate_risk_score(weighted_report_count)
-    profile.total_reports = max(0, int(round(weighted_report_count)))
+    profile.total_reports = max(0, total_reports)
     profile.weighted_report_total = round(weighted_report_count, 4)
     profile.confidence_interval = confidence_interval
     profile.top_risk_factors = json.dumps(top_risk_factors or _default_factors())

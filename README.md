@@ -5,17 +5,21 @@ CrashCast is a FastAPI backend scaffold for geospatial crash-risk reporting with
 ## What exists today
 
 - API server for reporters, media intake, report creation, and risk-profile lookup
+- Built-in server-rendered user/admin web UI (`/ui/report`, `/admin`)
 - PostgreSQL/PostGIS persistence for reports and risk profiles
 - Redis + Celery workers for background verification/scoring flows
 - Optional S3 pre-signed media upload support
 - Baseline ML training entrypoint for future risk-model work
 
-> Current product shape: backend-first. There is no custom frontend yet; the main local UI is FastAPI's auto-generated API docs.
+> Current product shape: API + lightweight server-rendered UI for local testing.
 
 ## Local API UI (what you'll see on localhost)
 
 After startup, open:
 
+- Home UI: `http://127.0.0.1:8000/`
+- User reporting UI: `http://127.0.0.1:8000/ui/report`
+- Admin moderation UI: `http://127.0.0.1:8000/admin`
 - Swagger UI: `http://127.0.0.1:8000/docs`
 - ReDoc: `http://127.0.0.1:8000/redoc`
 
@@ -31,62 +35,120 @@ Swagger UI shows each endpoint grouped by tag/route, with:
 
 If your docs page appears blank, check browser extensions/network policy (Swagger assets are loaded from CDN by default).
 
+## Quick start
+
+Run one command — it handles everything (venv, dependencies, database, schema, server):
+
+**Windows (Command Prompt or double-click)**
+```bat
+start.bat
+```
+
+**macOS / Linux**
+```bash
+chmod +x start.sh && ./start.sh
+```
+
+The script will:
+1. Start PostgreSQL + Redis via Docker Compose (if Docker is running)
+2. Create and populate a Python virtual environment
+3. Write a `.env` file with safe local defaults if one doesn't exist yet
+4. Wait until PostgreSQL accepts connections
+5. Initialise the database schema
+6. Launch the API at `http://127.0.0.1:8000`
+
+> **Requires Docker Desktop** for the database step. If you already have PostgreSQL and Redis running natively, the script detects this and skips Docker.
+
+---
+
 ## Prerequisites
 
-- Python 3.12+
-- PostgreSQL with PostGIS enabled
-- Redis
-- (Optional) AWS credentials if testing real S3 presign flow
+- Python 3.11+
+- PostgreSQL 14+ with the PostGIS extension
+- Redis 6+
+- (Optional) AWS credentials if testing the S3 pre-sign flow
 
-## Setup (localhost)
+The fastest way to get PostgreSQL and Redis running locally is with the included Docker Compose file (see below). You do **not** need Docker to run the Python API itself.
 
-### 1) Create environment and install dependencies
+## Running the app
+
+### Step 1 — Start PostgreSQL and Redis
+
+**Option A: Docker Compose (recommended)**
 
 ```bash
-cd <your-local-path>/CrashCast
+docker compose up -d
+```
+
+This starts a PostGIS-enabled PostgreSQL instance on port 5432 and Redis on port 6379. Data is persisted in a named Docker volume between restarts.
+
+**Option B: native installs**
+
+Install PostgreSQL with the PostGIS extension and Redis via your OS package manager, then start both services manually.
+
+### Step 2 — Create a Python virtual environment and install dependencies
+
+```bash
 python -m venv .venv
-source .venv/bin/activate
+```
+
+Activate it:
+
+| Platform | Command |
+|----------|---------|
+| macOS / Linux | `source .venv/bin/activate` |
+| Windows (PowerShell) | `.venv\Scripts\Activate.ps1` |
+| Windows (cmd) | `.venv\Scripts\activate.bat` |
+
+Then install:
+
+```bash
 pip install -r requirements.txt
 ```
 
-### 2) Configure environment variables
+### Step 3 — Configure environment variables
 
-Create `.env` in the project root:
+Create a `.env` file in the project root:
 
 ```env
 APP_NAME=CrashCast API
 API_PREFIX=/api/v1
-DATABASE_URL=postgresql+psycopg://localhost:5432/crashcast
+DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/crashcast
 REDIS_URL=redis://localhost:6379/0
 AWS_REGION=us-east-1
 S3_BUCKET=crashcast-media
 PLATE_HASH_PEPPER=change-me
+PUBLIC_PLATE_LOOKUP_SALT=public_demo_salt_not_secret
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 ```
 
-### 3) Initialize database tables
+> If you installed PostgreSQL natively (Option B above), update `DATABASE_URL` with your actual username, password, and database name.
+
+### Step 4 — Initialize the database schema
 
 ```bash
-cd <your-local-path>/CrashCast
 python -c "from app.db.init_db import init_db; init_db()"
 ```
 
-### 4) Start the API
+### Step 5 — Start the API server
 
 ```bash
-cd <your-local-path>/CrashCast
-source .venv/bin/activate
 uvicorn app.main:app --reload
 ```
 
-### 5) Start Celery worker (separate terminal)
+The API is now live at `http://127.0.0.1:8000`. Open `http://127.0.0.1:8000/docs` for the interactive Swagger UI.
+
+### Step 6 — Start the Celery worker (separate terminal, optional)
+
+Background tasks (media verification, risk-profile recomputation) run via Celery. Reports are still accepted without the worker running — tasks are queued and processed once the worker starts.
+
+Activate the venv again in the new terminal, then:
 
 ```bash
-cd <your-local-path>/CrashCast
-source .venv/bin/activate
 celery -A app.workers.celery_app.celery_app worker -Q verification,scoring,nightly --loglevel=info
 ```
 
-### 6) Smoke check
+### Smoke check
 
 ```bash
 curl http://127.0.0.1:8000/health
@@ -95,7 +157,7 @@ curl http://127.0.0.1:8000/health
 Expected:
 
 ```json
-{"status":"ok"}
+{"status": "ok"}
 ```
 
 ## Current user walkthrough (localhost)
@@ -170,13 +232,18 @@ curl "http://127.0.0.1:8000/api/v1/risk-profile/HASHED_PLATE"
 - `POST /api/v1/media/presign`
 - `POST /api/v1/media/extract`
 - `POST /api/v1/reports`
+- `GET /api/v1/reports/feed?limit=150`
 - `GET /api/v1/risk-profile/{hashed_plate}`
+
+`/api/v1/risk-profile/{hashed_plate}` now accepts either:
+- internal hashed plate values produced by `PLATE_HASH_PEPPER` (HMAC-SHA256), or
+- frontend lookup hashes (`sha256(PUBLIC_PLATE_LOOKUP_SALT + ":" + normalized_plate)`), which matches the localhost:3000 UI flow.
 
 ## Testing
 
+Unit tests run without a database or Redis:
+
 ```bash
-cd <your-local-path>/CrashCast
-source .venv/bin/activate
 pytest -q
 ```
 

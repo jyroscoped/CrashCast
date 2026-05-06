@@ -71,6 +71,13 @@ class DriverRiskProfiles(Base):
     )
 
 
+class PlateLookupAliases(Base):
+    __tablename__ = "plate_lookup_aliases"
+
+    alias_hash: Mapped[str] = mapped_column(String(64), primary_key=True, index=True)
+    canonical_hash: Mapped[str] = mapped_column(String(128), index=True, nullable=False)
+
+
 class CredibilityAuditLog(Base):
     __tablename__ = "credibility_audit_logs"
 
